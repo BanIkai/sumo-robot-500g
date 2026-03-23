@@ -1,0 +1,81 @@
+// ===== MOTOR (A4950) =====
+int IN1_A = 10;   
+int IN2_A = 11;
+
+int IN1_B = 6;   
+int IN2_B = 5;
+//จูนกันmotorแรงไม่เท่ากัน
+int offsetA = 0;
+int offsetB = 0;
+
+// ===== MOTOR CONTROL =====
+void setMotorA(int speed) {
+  speed += offsetA;
+  speed = constrain(speed, -255, 255);
+
+  if (speed > 0) {
+    analogWrite(IN1_A, speed);
+    digitalWrite(IN1_A, HIGH);
+    digitalWrite(IN2_A, LOW);
+  } 
+  else if (speed < 0) {
+    digitalWrite(IN1_A, LOW);
+    digitalWrite(IN2_A, HIGH);
+    analogWrite(IN2_A, -speed);
+  } 
+  else {
+    digitalWrite(IN1_A, LOW);
+    digitalWrite(IN2_A, LOW);
+  }
+}
+
+void setMotorB(int speed) {
+  speed += offsetB;
+  speed = constrain(speed, -255, 255);
+
+  if (speed > 0) {
+    analogWrite(IN1_B, speed);
+    digitalWrite(IN2_B, LOW);
+    digitalWrite(IN1_B, HIGH);
+  } 
+  else if (speed < 0) {
+    digitalWrite(IN1_B, LOW);
+    digitalWrite(IN2_B, HIGH);
+    analogWrite(IN2_B, -speed);
+  } 
+  else {
+    digitalWrite(IN1_B, LOW);
+    digitalWrite(IN2_B, LOW);
+  }
+}
+
+// ===== MOVE =====
+void move(int left, int right) {
+  setMotorA(left);
+  setMotorB(right);
+}
+
+// ===== BRAKE =====
+ /* void softBrake() {
+  for (int spd = speed; spd > 0; spd -= 20) {
+    move(spd, spd);
+    delay(20);
+  }
+}
+*/
+// ===== SETUP =====
+void setup() {
+  pinMode(IN1_A, OUTPUT);
+  pinMode(IN2_A, OUTPUT);
+
+  pinMode(IN1_B, OUTPUT);
+  pinMode(IN2_B, OUTPUT);
+
+
+
+}
+
+// ===== LOOP =====
+void loop() {
+}
+  
