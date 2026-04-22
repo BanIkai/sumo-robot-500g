@@ -1,0 +1,92 @@
+// ===== IR SENSOR =====
+int IR_L = A0;
+int IR_R = A1;
+
+// ===== MOTOR (A4950) =====
+int IN1_A = 10;   
+int IN2_A = 11;
+
+int IN1_B = 6;   
+int IN2_B = 5;
+
+// ===== OFFSET (จูนแรงมอเตอร์) =====
+int offsetA = 0;
+int offsetB = 0;
+
+// ===== MOTOR CONTROL =====
+void setMotorA(int speed) {
+  speed += offsetA;
+  speed = constrain(speed, -255, 255);
+
+  if (speed > 0) {
+    analogWrite(IN1_A, speed);
+    digitalWrite(IN2_A, LOW);
+  } 
+  else if (speed < 0) {
+    digitalWrite(IN1_A, LOW);
+    analogWrite(IN2_A, -speed);
+  } 
+  else {
+    digitalWrite(IN1_A, LOW);
+    digitalWrite(IN2_A, LOW);
+  }
+}
+
+void setMotorB(int speed) {
+  speed += offsetB;
+  speed = constrain(speed, -255, 255);
+
+  if (speed > 0) {
+    analogWrite(IN1_B, speed);
+    digitalWrite(IN2_B, LOW);
+  } 
+  else if (speed < 0) {
+    digitalWrite(IN1_B, LOW);
+    analogWrite(IN2_B, -speed);
+  } 
+  else {
+    digitalWrite(IN1_B, LOW);
+    digitalWrite(IN2_B, LOW);
+  }
+}
+
+// ===== MOVE =====
+void move(int left, int right) {
+  setMotorA(left);
+  setMotorB(right);
+}
+
+// ===== SETUP =====
+void setup() {
+  pinMode(IR_L, INPUT);
+  pinMode(IR_R, INPUT);
+
+  pinMode(IN1_A, OUTPUT);
+  pinMode(IN2_A, OUTPUT);
+  pinMode(IN1_B, OUTPUT);
+  pinMode(IN2_B, OUTPUT);
+
+  delay(3000); // หน่วงตอนเริ่ม (กันพุ่งตกเวที)
+}
+
+// ===== LOOP =====
+void loop() {
+  int left = digitalRead(IR_L);
+  int right = digitalRead(IR_R);
+
+  int speed = 200; // ปรับความแรง
+
+  // ⚠️ ปรับ HIGH/LOW ตาม sensor จริงของคุณ
+  if (left == LOW && right == LOW) {
+    move(speed, speed);           // เจอทั้งคู่ → พุ่งชน
+  }
+  else if (left == LOW) {
+    move(100, speed);             // เจอซ้าย → เบี่ยงซ้าย
+  }
+  else if (right == LOW) {
+    move(speed, 100);             // เจอขวา → เบี่ยงขวา
+  }
+  else {
+    move(-120, 120);              // หมุนหา
+  }
+}
