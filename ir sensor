@@ -1,0 +1,27 @@
+int IR_L = A0;
+int IR_R = A1;
+
+void setup() {
+  pinMode(IR_L, INPUT);
+  pinMode(IR_R, INPUT);
+  Serial.begin(9600);
+}
+
+void loop() {
+  int left = digitalRead(IR_L);
+  int right = digitalRead(IR_R);
+
+  if (left == LOW) {
+    Serial.print("Left: DETECT ");
+  } else {
+    Serial.print("Left: NONE ");
+  }
+
+  if (right == LOW) {
+    Serial.println("Right: DETECT");
+  } else {
+    Serial.println("Right: NONE");
+  }
+
+  delay(200);
+}
