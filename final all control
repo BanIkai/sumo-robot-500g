@@ -97,4 +97,6 @@ void loop() {
   else {
     move( , );           
   }
+int distance = lox.readRangeContinuousMillimeters();
+  
 }
