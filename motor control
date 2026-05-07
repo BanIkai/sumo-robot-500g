@@ -4,13 +4,10 @@ int IN2_A = 11;
 
 int IN1_B = 6;   
 int IN2_B = 5;
-//จูนกันmotorแรงไม่เท่ากัน
-int offsetA = 0;
-int offsetB = 0;
+
 
 // ===== MOTOR CONTROL =====
 void setMotorA(int speed) {
-  speed += offsetA;
   speed = constrain(speed, -255, 255);
 
   if (speed > 0) {
@@ -30,7 +27,6 @@ void setMotorA(int speed) {
 }
 
 void setMotorB(int speed) {
-  speed += offsetB;
   speed = constrain(speed, -255, 255);
 
   if (speed > 0) {
@@ -55,14 +51,6 @@ void move(int left, int right) {
   setMotorB(right);
 }
 
-// ===== BRAKE =====
- /* void softBrake() {
-  for (int spd = speed; spd > 0; spd -= 20) {
-    move(spd, spd);
-    delay(20);
-  }
-}
-*/
 // ===== SETUP =====
 void setup() {
   pinMode(IN1_A, OUTPUT);
