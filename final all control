@@ -54,3 +54,36 @@ void move(int left, int right) {
   setMotorA(left);
   setMotorB(right);
 }
+
+void setup() {
+  pinMode(IR_L, INPUT);
+  pinMode(IR_R, INPUT);
+
+  pinMode(IN1_A, OUTPUT);
+  pinMode(IN2_A, OUTPUT);
+  pinMode(IN1_B, OUTPUT);
+  pinMode(IN2_B, OUTPUT);
+
+  delay(3000); 
+}
+
+// ===== LOOP =====//
+void loop() {
+  int left = digitalRead(IR_L);
+  int right = digitalRead(IR_R);
+
+  int speed = 200; 
+
+  if (left == LOW && right == LOW) {
+    move( , );           
+  }
+  else if (left == LOW) {
+    move( , );           
+  }
+  else if (right == LOW) {
+    move( , );             
+  }
+  else {
+    move( , );           
+  }
+}
