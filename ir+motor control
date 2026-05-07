@@ -9,9 +9,7 @@ int IN2_A = 11;
 int IN1_B = 6;   
 int IN2_B = 5;
 
-// ===== OFFSET (จูนแรงมอเตอร์) =====
-int offsetA = 0;
-int offsetB = 0;
+
 
 // ===== MOTOR CONTROL =====
 void setMotorA(int speed) {
