@@ -61,6 +61,7 @@ void move(int left, int right) {
 }
 
 void setup() {
+  Serial.Begin(9600);
   pinMode(IR_L, INPUT);
   pinMode(IR_R, INPUT);
 
@@ -69,7 +70,12 @@ void setup() {
   pinMode(IN1_B, OUTPUT);
   pinMode(IN2_B, OUTPUT);
 
-  delay(3000); 
+  if (!lox.begin()) {
+    while (1);
+  }
+
+  lox.startContinuous(); // เริ่มวัดต่อเนื่อง
+  
 }
 
 // ===== LOOP =====//
