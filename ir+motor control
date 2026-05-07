@@ -13,7 +13,6 @@ int IN2_B = 5;
 
 // ===== MOTOR CONTROL =====
 void setMotorA(int speed) {
-  speed += offsetA;
   speed = constrain(speed, -255, 255);
 
   if (speed > 0) {
@@ -31,7 +30,6 @@ void setMotorA(int speed) {
 }
 
 void setMotorB(int speed) {
-  speed += offsetB;
   speed = constrain(speed, -255, 255);
 
   if (speed > 0) {
