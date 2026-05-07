@@ -3,100 +3,138 @@
 
 Adafruit_VL53L0X lox = Adafruit_VL53L0X();
 
-// ===== MOTOR (A4950) =====
-int IN1_A = 10;   
+// ===== MOTOR =====
+int IN1_A = 10;
 int IN2_A = 11;
 
-int IN1_B = 6;   
+int IN1_B = 6;
 int IN2_B = 5;
 
-//=====KY033=====//
+// ===== IR =====
 int IR_L = 7;
 int IR_R = 8;
 
 
-// ===== MOTOR CONTROL =====
 void setMotorA(int speed) {
+
   speed = constrain(speed, -255, 255);
 
+  // เดินหน้า
   if (speed > 0) {
+
     analogWrite(IN1_A, speed);
-    digitalWrite(IN1_A, HIGH);
     digitalWrite(IN2_A, LOW);
-  } 
+  }
+
+  // ถอย
   else if (speed < 0) {
+
     digitalWrite(IN1_A, LOW);
-    digitalWrite(IN2_A, HIGH);
     analogWrite(IN2_A, -speed);
-  } 
+  }
+
+  // หยุด
   else {
+
     digitalWrite(IN1_A, LOW);
     digitalWrite(IN2_A, LOW);
   }
 }
 
 void setMotorB(int speed) {
+
   speed = constrain(speed, -255, 255);
 
+ 
   if (speed > 0) {
+
     analogWrite(IN1_B, speed);
     digitalWrite(IN2_B, LOW);
-    digitalWrite(IN1_B, HIGH);
-  } 
+  }
+
+  // ถอย
   else if (speed < 0) {
+
     digitalWrite(IN1_B, LOW);
-    digitalWrite(IN2_B, HIGH);
     analogWrite(IN2_B, -speed);
-  } 
-  else {
+  }
+
+  // หยุด
+
+
     digitalWrite(IN1_B, LOW);
     digitalWrite(IN2_B, LOW);
   }
 }
 
-// ===== MOVE =====
+// รวมควบคุมล้อ
 void move(int left, int right) {
+
   setMotorA(left);
   setMotorB(right);
 }
 
 void setup() {
-  Serial.Begin(9600);
+
+  Serial.begin(9600);
+
+  // IR
   pinMode(IR_L, INPUT);
   pinMode(IR_R, INPUT);
 
+  // MOTOR
   pinMode(IN1_A, OUTPUT);
   pinMode(IN2_A, OUTPUT);
+
   pinMode(IN1_B, OUTPUT);
   pinMode(IN2_B, OUTPUT);
 
+  // ===== VL53L0X =====
   if (!lox.begin()) {
+
+    Serial.println("VL53L0X ERROR");
+
     while (1);
   }
 
-  lox.startContinuous(); // เริ่มวัดต่อเนื่อง
-  
+  // เริ่ม continuous mode
+  lox.startContinuous();
+
+  Serial.println("READY");
 }
 
-// ===== LOOP =====//
+
 void loop() {
+
+  // ===== อ่าน IR =====
   int left = digitalRead(IR_L);
   int right = digitalRead(IR_R);
 
-  int speed = 200; 
+  // ===== อ่านระยะ =====
+  int distance =
+    lox.readRangeContinuousMillimeters();
 
-  if (left == LOW && right == LOW) {
-    move( , );           
+  if (left == LOW || right == LOW) {
+
+    // ถอย
+    move(-200, -200);
+    delay(200);
+
+    // หมุนกลับ
+    move(-180, 180);
+    delay(200);
   }
-  else if (left == LOW) {
-    move( , );           
-  }
-  else if (right == LOW) {
-    move( , );             
+
+
+  else if (distance < 1000 && !lox.timeoutOccurred()) {
+    move(255, 255);
   }
   else {
-    move( , );           
+    // หมุนหา
+    move(-150, 150);
   }
-int distance = lox.readRangeContinuousMillimeters();
-  
+
+ 
+
+  delay(20);
 }
