@@ -1,52 +1,42 @@
 #include <Wire.h>
 #include "Adafruit_VL53L0X.h"
 
+Adafruit_VL53L0X LOXCENTER = Adafruit_VL53L0X();
+Adafruit_VL53L0X LOXLEFT   = Adafruit_VL53L0X();
+Adafruit_VL53L0X LOXRIGHT  = Adafruit_VL53L0X();
 
-
-Adafruit_VL53L0X loxFront = Adafruit_VL53L0X();
-Adafruit_VL53L0X loxLeft  = Adafruit_VL53L0X();
-Adafruit_VL53L0X loxRight = Adafruit_VL53L0X();
-
-
-
-#define XSHUT_LEFT 12
+#define XSHUT_LEFT    12
 #define XSHUT_CENTER  4
-#define XSHUT_RIGHT 2
-
-
+#define XSHUT_RIGHT   2
 
 // MOTOR A
-int IN1_A = 11;   // MOTA1
-int IN2_A = 10;   // MOTA2
+int IN1_A = 11;
+int IN2_A = 10;
 
 // MOTOR B
-int IN1_B = 5;    // MOTB1
-int IN2_B = 6;    // MOTB2
+int IN1_B = 5;
+int IN2_B = 6;
 
-
+// IR
 int IR_L = 7;
 int IR_R = 8;
-
 
 void setMotorA(int speed) {
 
   speed = constrain(speed, -255, 255);
 
-  // เดินหน้า
   if (speed > 0) {
 
     analogWrite(IN1_A, speed);
     digitalWrite(IN2_A, LOW);
   }
 
-  // ถอย
   else if (speed < 0) {
 
     digitalWrite(IN1_A, LOW);
     analogWrite(IN2_A, -speed);
   }
 
-  // หยุด
   else {
 
     digitalWrite(IN1_A, LOW);
@@ -58,28 +48,24 @@ void setMotorB(int speed) {
 
   speed = constrain(speed, -255, 255);
 
-  // เดินหน้า
   if (speed > 0) {
 
     analogWrite(IN1_B, speed);
     digitalWrite(IN2_B, LOW);
   }
 
-  // ถอย
   else if (speed < 0) {
 
     digitalWrite(IN1_B, LOW);
     analogWrite(IN2_B, -speed);
   }
 
-  // หยุด
   else {
 
     digitalWrite(IN1_B, LOW);
     digitalWrite(IN2_B, LOW);
   }
 }
-
 
 void move(int left, int right) {
 
@@ -87,137 +73,120 @@ void move(int left, int right) {
   setMotorB(right);
 }
 
-
 void setup() {
 
   Serial.begin(9600);
   Wire.begin();
 
-
+  // MOTOR
   pinMode(IN1_A, OUTPUT);
   pinMode(IN2_A, OUTPUT);
 
   pinMode(IN1_B, OUTPUT);
   pinMode(IN2_B, OUTPUT);
 
-
+  // IR
   pinMode(IR_L, INPUT);
   pinMode(IR_R, INPUT);
 
-
+  // XSHUT
   pinMode(XSHUT_CENTER, OUTPUT);
   pinMode(XSHUT_LEFT, OUTPUT);
   pinMode(XSHUT_RIGHT, OUTPUT);
 
-
+  // ปิดทุกตัวก่อน
   digitalWrite(XSHUT_CENTER, LOW);
   digitalWrite(XSHUT_LEFT, LOW);
   digitalWrite(XSHUT_RIGHT, LOW);
 
   delay(10);
 
-
+  // CENTER
   digitalWrite(XSHUT_CENTER, HIGH);
   delay(10);
 
-  if (!loxCENTER.begin(0x30)) {
+  if (!LOXCENTER.begin(0x30)) {
 
-    Serial.println("Front fail");
+    Serial.println("CENTER FAIL");
     while (1);
   }
 
-
+  // LEFT
   digitalWrite(XSHUT_LEFT, HIGH);
   delay(10);
 
-  if (!loxLEFT.begin(0x31)) {
+  if (!LOXLEFT.begin(0x31)) {
 
-    Serial.println("Left fail");
+    Serial.println("LEFT FAIL");
     while (1);
   }
 
-
-
+  // RIGHT
   digitalWrite(XSHUT_RIGHT, HIGH);
   delay(10);
 
-  if (!loxRIGHT.begin(0x32)) {
+  if (!LOXRIGHT.begin(0x32)) {
 
-    Serial.println("Right fail");
+    Serial.println("RIGHT FAIL");
     while (1);
   }
 
-
-
-  loxCENTER.startContinuous();
-  loxLEFT.startContinuous();
-  loxRIGHT.startContinuous();
+  LOXCENTER.startContinuous();
+  LOXLEFT.startContinuous();
+  LOXRIGHT.startContinuous();
 
   Serial.println("READY");
 }
 
-
-
 void loop() {
-
-
 
   int leftIR = digitalRead(IR_L);
   int rightIR = digitalRead(IR_R);
 
-
-
-  int frontDist = loxCENTER.readRangeContinuousMillimeters();
-  int leftDist  = loxLEFT.readRangeContinuousMillimeters();
-  int rightDist = loxRIGHT.readRangeContinuousMillimeters();
-
-
+  int frontDist = LOXCENTER.readRangeContinuousMillimeters();
+  int leftDist  = LOXLEFT.readRangeContinuousMillimeters();
+  int rightDist = LOXRIGHT.readRangeContinuousMillimeters();
 
   Serial.print("F:");
   Serial.print(frontDist);
 
-  Serial.print("  L:");
+  Serial.print(" L:");
   Serial.print(leftDist);
 
-  Serial.print("  R:");
+  Serial.print(" R:");
   Serial.println(rightDist);
 
-
-
+  // กันตกสนาม
   if (leftIR == LOW || rightIR == LOW) {
 
-    // ถอย
     move(-255, -255);
     delay(170);
 
-    // หมุนกลับ
     move(-220, 220);
     delay(220);
   }
 
-
-
+  // กลางเจอ
   else if (frontDist > 0 && frontDist < 450) {
 
     move(255, 255);
   }
 
-
-
+  // ซ้ายเจอ
   else if (leftDist > 0 && leftDist < 450) {
 
     move(180, 255);
   }
 
+  // ขวาเจอ
   else if (rightDist > 0 && rightDist < 450) {
 
     move(255, 180);
   }
 
-
+  // ไม่เจอ
   else {
 
-    // หมุนหา
     move(120, -120);
   }
 
