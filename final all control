@@ -2,21 +2,26 @@
 #include "Adafruit_VL53L0X.h"
 
 
+
 Adafruit_VL53L0X loxFront = Adafruit_VL53L0X();
 Adafruit_VL53L0X loxLeft  = Adafruit_VL53L0X();
 Adafruit_VL53L0X loxRight = Adafruit_VL53L0X();
 
 
-#define XSHUT_FRONT A0
-#define XSHUT_LEFT  A1
-#define XSHUT_RIGHT A2
+
+#define XSHUT_FRONT 12
+#define XSHUT_LEFT  4
+#define XSHUT_RIGHT 2
 
 
-int IN1_A = 10;
-int IN2_A = 11;
 
-int IN1_B = 6;
-int IN2_B = 5;
+// MOTOR A
+int IN1_A = 11;   // MOTA1
+int IN2_A = 10;   // MOTA2
+
+// MOTOR B
+int IN1_B = 5;    // MOTB1
+int IN2_B = 6;    // MOTB2
 
 
 int IR_L = 7;
@@ -53,21 +58,21 @@ void setMotorB(int speed) {
 
   speed = constrain(speed, -255, 255);
 
-
+  // เดินหน้า
   if (speed > 0) {
 
     analogWrite(IN1_B, speed);
     digitalWrite(IN2_B, LOW);
   }
 
-
+  // ถอย
   else if (speed < 0) {
 
     digitalWrite(IN1_B, LOW);
     analogWrite(IN2_B, -speed);
   }
 
-
+  // หยุด
   else {
 
     digitalWrite(IN1_B, LOW);
@@ -75,11 +80,13 @@ void setMotorB(int speed) {
   }
 }
 
+
 void move(int left, int right) {
 
   setMotorA(left);
   setMotorB(right);
 }
+
 
 void setup() {
 
@@ -130,6 +137,7 @@ void setup() {
   }
 
 
+
   digitalWrite(XSHUT_RIGHT, HIGH);
   delay(10);
 
@@ -140,6 +148,7 @@ void setup() {
   }
 
 
+
   loxFront.startContinuous();
   loxLeft.startContinuous();
   loxRight.startContinuous();
@@ -148,11 +157,14 @@ void setup() {
 }
 
 
+
 void loop() {
+
 
 
   int leftIR = digitalRead(IR_L);
   int rightIR = digitalRead(IR_R);
+
 
 
   int frontDist = loxFront.readRangeContinuousMillimeters();
@@ -161,20 +173,20 @@ void loop() {
 
 
 
-  Serial.print("F: ");
+  Serial.print("F:");
   Serial.print(frontDist);
 
-  Serial.print("  L: ");
+  Serial.print("  L:");
   Serial.print(leftDist);
 
-  Serial.print("  R: ");
+  Serial.print("  R:");
   Serial.println(rightDist);
 
 
 
   if (leftIR == LOW || rightIR == LOW) {
 
-    // ถอยแรง
+    // ถอย
     move(-255, -255);
     delay(170);
 
@@ -183,22 +195,22 @@ void loop() {
     delay(220);
   }
 
- 
+
+
   else if (frontDist > 0 && frontDist < 450) {
 
     move(255, 255);
   }
-==========
+
+
 
   else if (leftDist > 0 && leftDist < 450) {
 
     move(180, 255);
   }
 
-
   else if (rightDist > 0 && rightDist < 450) {
 
-    // เบี่ยงขวา
     move(255, 180);
   }
 
