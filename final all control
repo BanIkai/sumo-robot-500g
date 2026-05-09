@@ -1,82 +1,213 @@
 #include <Wire.h>
 #include "Adafruit_VL53L0X.h"
 
-Adafruit_VL53L0X lox = Adafruit_VL53L0X();
 
-// ===== MOTOR =====
-int IN1_A = 10; int IN2_A = 11;
-int IN1_B = 6;  int IN2_B = 5;
+Adafruit_VL53L0X loxFront = Adafruit_VL53L0X();
+Adafruit_VL53L0X loxLeft  = Adafruit_VL53L0X();
+Adafruit_VL53L0X loxRight = Adafruit_VL53L0X();
 
-// ===== IR  =====
+
+#define XSHUT_FRONT A0
+#define XSHUT_LEFT  A1
+#define XSHUT_RIGHT A2
+
+
+int IN1_A = 10;
+int IN2_A = 11;
+
+int IN1_B = 6;
+int IN2_B = 5;
+
+
 int IR_L = 7;
 int IR_R = 8;
 
+
 void setMotorA(int speed) {
+
   speed = constrain(speed, -255, 255);
+
+  // เดินหน้า
   if (speed > 0) {
+
     analogWrite(IN1_A, speed);
     digitalWrite(IN2_A, LOW);
-  } else if (speed < 0) {
+  }
+
+  // ถอย
+  else if (speed < 0) {
+
     digitalWrite(IN1_A, LOW);
     analogWrite(IN2_A, -speed);
-  } else {
+  }
+
+  // หยุด
+  else {
+
     digitalWrite(IN1_A, LOW);
     digitalWrite(IN2_A, LOW);
   }
 }
 
 void setMotorB(int speed) {
+
   speed = constrain(speed, -255, 255);
+
+
   if (speed > 0) {
+
     analogWrite(IN1_B, speed);
     digitalWrite(IN2_B, LOW);
-  } else if (speed < 0) {
+  }
+
+
+  else if (speed < 0) {
+
     digitalWrite(IN1_B, LOW);
     analogWrite(IN2_B, -speed);
-  } else {
+  }
+
+
+  else {
+
     digitalWrite(IN1_B, LOW);
     digitalWrite(IN2_B, LOW);
   }
 }
 
 void move(int left, int right) {
+
   setMotorA(left);
   setMotorB(right);
 }
 
 void setup() {
+
   Serial.begin(9600);
+  Wire.begin();
+
+
+  pinMode(IN1_A, OUTPUT);
+  pinMode(IN2_A, OUTPUT);
+
+  pinMode(IN1_B, OUTPUT);
+  pinMode(IN2_B, OUTPUT);
+
+
   pinMode(IR_L, INPUT);
   pinMode(IR_R, INPUT);
-  pinMode(IN1_A, OUTPUT); pinMode(IN2_A, OUTPUT);
-  pinMode(IN1_B, OUTPUT); pinMode(IN2_B, OUTPUT);
 
-  if (!lox.begin()) {
+
+  pinMode(XSHUT_FRONT, OUTPUT);
+  pinMode(XSHUT_LEFT, OUTPUT);
+  pinMode(XSHUT_RIGHT, OUTPUT);
+
+
+  digitalWrite(XSHUT_FRONT, LOW);
+  digitalWrite(XSHUT_LEFT, LOW);
+  digitalWrite(XSHUT_RIGHT, LOW);
+
+  delay(10);
+
+
+  digitalWrite(XSHUT_FRONT, HIGH);
+  delay(10);
+
+  if (!loxFront.begin(0x30)) {
+
+    Serial.println("Front fail");
     while (1);
   }
-  lox.startContinuous();
-  
 
+
+  digitalWrite(XSHUT_LEFT, HIGH);
+  delay(10);
+
+  if (!loxLeft.begin(0x31)) {
+
+    Serial.println("Left fail");
+    while (1);
+  }
+
+
+  digitalWrite(XSHUT_RIGHT, HIGH);
+  delay(10);
+
+  if (!loxRight.begin(0x32)) {
+
+    Serial.println("Right fail");
+    while (1);
+  }
+
+
+  loxFront.startContinuous();
+  loxLeft.startContinuous();
+  loxRight.startContinuous();
+
+  Serial.println("READY");
 }
 
+
 void loop() {
+
+
   int leftIR = digitalRead(IR_L);
   int rightIR = digitalRead(IR_R);
-  int distance = lox.readRangeContinuousMillimeters();
+
+
+  int frontDist = loxFront.readRangeContinuousMillimeters();
+  int leftDist  = loxLeft.readRangeContinuousMillimeters();
+  int rightDist = loxRight.readRangeContinuousMillimeters();
+
+
+
+  Serial.print("F: ");
+  Serial.print(frontDist);
+
+  Serial.print("  L: ");
+  Serial.print(leftDist);
+
+  Serial.print("  R: ");
+  Serial.println(rightDist);
+
+
 
   if (leftIR == LOW || rightIR == LOW) {
-    move(-255, -255); 
-    delay(150);
-    move(-200, 200);  
-    delay(200);
-  } 
-  else if (distance > 0 && distance < 600) { 
+
+    // ถอยแรง
+    move(-255, -255);
+    delay(170);
+
+    // หมุนกลับ
+    move(-220, 220);
+    delay(220);
+  }
+
+ 
+  else if (frontDist > 0 && frontDist < 450) {
+
     move(255, 255);
-  } 
+  }
+==========
+
+  else if (leftDist > 0 && leftDist < 450) {
+
+    move(180, 255);
+  }
+
+
+  else if (rightDist > 0 && rightDist < 450) {
+
+    // เบี่ยงขวา
+    move(255, 180);
+  }
+
 
   else {
+
+    // หมุนหา
     move(120, -120);
   }
 
-  delay(10); //
+  delay(10);
 }
