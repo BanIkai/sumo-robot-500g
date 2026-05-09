@@ -1,0 +1,140 @@
+#include <Wire.h>
+#include "Adafruit_VL53L0X.h"
+
+// สร้าง Object เซนเซอร์
+Adafruit_VL53L0X LOXCENTER = Adafruit_VL53L0X();
+Adafruit_VL53L0X LOXLEFT   = Adafruit_VL53L0X();
+Adafruit_VL53L0X LOXRIGHT  = Adafruit_VL53L0X();
+
+// ขาเชื่อมต่อ
+#define XSHUT_LEFT    12
+#define XSHUT_CENTER  4
+#define XSHUT_RIGHT   2
+#define IR_L          7
+#define IR_R          8
+
+// MOTOR A (ซ้าย)
+const int IN1_A = 11;
+const int IN2_A = 10;
+// MOTOR B (ขวา)
+const int IN1_B = 5;
+const int IN2_B = 6;
+
+// ตั้งค่าระยะตรวจจับ (มิลลิเมตร)
+const int MAX_DIST = 450; 
+const int MIN_DIST = 20;  // ป้องกันค่ารบกวนระยะใกล้มาก
+
+void setup() {
+  Serial.begin(9600);
+  Wire.begin();
+
+  pinMode(IN1_A, OUTPUT); pinMode(IN2_A, OUTPUT);
+  pinMode(IN1_B, OUTPUT); pinMode(IN2_B, OUTPUT);
+  pinMode(IR_L, INPUT);   pinMode(IR_R, INPUT);
+  pinMode(XSHUT_CENTER, OUTPUT); pinMode(XSHUT_LEFT, OUTPUT); pinMode(XSHUT_RIGHT, OUTPUT);
+
+  // --- ขั้นตอนการ Reset Address (สำคัญมาก) ---
+  digitalWrite(XSHUT_CENTER, LOW);
+  digitalWrite(XSHUT_LEFT, LOW);
+  digitalWrite(XSHUT_RIGHT, LOW);
+  delay(10);
+
+  // เปิดตัวกลาง
+  digitalWrite(XSHUT_CENTER, HIGH);
+  delay(10);
+  if (!LOXCENTER.begin(0x30)) { Serial.println("CENTER FAIL"); while (1); }
+
+  // เปิดตัวซ้าย
+  digitalWrite(XSHUT_LEFT, HIGH);
+  delay(10);
+  if (!LOXLEFT.begin(0x31)) { Serial.println("LEFT FAIL"); while (1); }
+
+  // เปิดตัวขวา
+  digitalWrite(XSHUT_RIGHT, HIGH);
+  delay(10);
+  if (!LOXRIGHT.begin(0x32)) { Serial.println("RIGHT FAIL"); while (1); }
+
+  // เริ่มโหมดอ่านต่อเนื่อง (เร็วขึ้น)
+  LOXCENTER.startContinuous();
+  LOXLEFT.startContinuous();
+  LOXRIGHT.startContinuous();
+
+  Serial.println("SUMO READY!");
+  delay(500); // หน่วงเวลาก่อนเริ่มจริง
+}
+
+void move(int left, int right) {
+  // มอเตอร์ซ้าย (A)
+  left = constrain(left, -255, 255);
+  if (left >= 0) {
+    analogWrite(IN1_A, left);
+    digitalWrite(IN2_A, LOW);
+  } else {
+    digitalWrite(IN1_A, LOW);
+    analogWrite(IN2_A, -left);
+  }
+
+  // มอเตอร์ขวา (B)
+  right = constrain(right, -255, 255);
+  if (right >= 0) {
+    analogWrite(IN1_B, right);
+    digitalWrite(IN2_B, LOW);
+  } else {
+    digitalWrite(IN1_B, LOW);
+    analogWrite(IN2_B, -right);
+  }
+}
+
+void loop() {
+  // 1. อ่านค่า IR กันตกสนาม
+  int leftIR = digitalRead(IR_L);
+  int rightIR = digitalRead(IR_R);
+
+  // 2. อ่านค่าระยะทาง
+  int distC = LOXCENTER.readRangeContinuousMillimeters();
+  int distL = LOXLEFT.readRangeContinuousMillimeters();
+  int distR = LOXRIGHT.readRangeContinuousMillimeters();
+
+  // 3. ตรวจสอบสถานะการตรวจพบ (Check Validity)
+  // ปกติถ้า Sensor วัดไม่ได้ จะคืนค่า > 8000 หรือ 0
+  bool seeC = (distC > MIN_DIST && distC < MAX_DIST);
+  bool seeL = (distL > MIN_DIST && distL < MAX_DIST);
+  bool seeR = (distR > MIN_DIST && distR < MAX_DIST);
+
+  // --- LOGIC การตัดสินใจ ---
+
+  // ลำดับ 1: กันตกสนาม (สำคัญที่สุด)
+  if (leftIR == LOW || rightIR == LOW) {
+    move(-255, -255); // ถอยหลังเต็มสูบ
+    delay(200);
+    if (leftIR == LOW) move(255, -255); // ถ้าตกซ้าย ให้บิดขวา
+    else move(-255, 255);               // ถ้าตกขวา ให้บิดซ้าย
+    delay(250);
+  } 
+  
+  // ลำดับ 2: โจมตีเมื่อเจอศัตรู
+  else if (seeC) {
+    // เจอตรงหน้า - พุ่งชนเต็มกำลัง
+    move(255, 255);
+  } 
+  else if (seeL && seeR) {
+    // เจอทั้งซ้ายและขวา แต่อาจไม่เจอตรงกลาง (ศัตรูตัวกว้าง) - พุ่งชน
+    move(255, 255);
+  }
+  else if (seeL) {
+    // เจอทางซ้าย - เลี้ยวซ้ายไปหา
+    move(100, 255); 
+  } 
+  else if (seeR) {
+    // เจอทางขวา - เลี้ยวขวาไปหา
+    move(255, 100);
+  } 
+
+  // ลำดับ 3: ไม่เจอใครเลย - หมุนหา
+  else {
+    // หมุนตัวอยู่กับที่เพื่อค้นหา
+    move(130, -130); 
+  }
+
+  delay(5); // หน่วงเวลาเล็กน้อยเพื่อให้ระบบ Loop เสถียร
+}
