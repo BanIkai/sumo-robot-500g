@@ -9,8 +9,8 @@ Adafruit_VL53L0X loxRight = Adafruit_VL53L0X();
 
 
 
-#define XSHUT_FRONT 12
-#define XSHUT_LEFT  4
+#define XSHUT_LEFT 12
+#define XSHUT_CENTER  4
 #define XSHUT_RIGHT 2
 
 
@@ -105,22 +105,22 @@ void setup() {
   pinMode(IR_R, INPUT);
 
 
-  pinMode(XSHUT_FRONT, OUTPUT);
+  pinMode(XSHUT_CENTER, OUTPUT);
   pinMode(XSHUT_LEFT, OUTPUT);
   pinMode(XSHUT_RIGHT, OUTPUT);
 
 
-  digitalWrite(XSHUT_FRONT, LOW);
+  digitalWrite(XSHUT_CENTER, LOW);
   digitalWrite(XSHUT_LEFT, LOW);
   digitalWrite(XSHUT_RIGHT, LOW);
 
   delay(10);
 
 
-  digitalWrite(XSHUT_FRONT, HIGH);
+  digitalWrite(XSHUT_CENTER, HIGH);
   delay(10);
 
-  if (!loxFront.begin(0x30)) {
+  if (!loxCENTER.begin(0x30)) {
 
     Serial.println("Front fail");
     while (1);
@@ -130,7 +130,7 @@ void setup() {
   digitalWrite(XSHUT_LEFT, HIGH);
   delay(10);
 
-  if (!loxLeft.begin(0x31)) {
+  if (!loxLEFT.begin(0x31)) {
 
     Serial.println("Left fail");
     while (1);
@@ -141,7 +141,7 @@ void setup() {
   digitalWrite(XSHUT_RIGHT, HIGH);
   delay(10);
 
-  if (!loxRight.begin(0x32)) {
+  if (!loxRIGHT.begin(0x32)) {
 
     Serial.println("Right fail");
     while (1);
@@ -149,9 +149,9 @@ void setup() {
 
 
 
-  loxFront.startContinuous();
-  loxLeft.startContinuous();
-  loxRight.startContinuous();
+  loxCENTER.startContinuous();
+  loxLEFT.startContinuous();
+  loxRIGHT.startContinuous();
 
   Serial.println("READY");
 }
@@ -167,9 +167,9 @@ void loop() {
 
 
 
-  int frontDist = loxFront.readRangeContinuousMillimeters();
-  int leftDist  = loxLeft.readRangeContinuousMillimeters();
-  int rightDist = loxRight.readRangeContinuousMillimeters();
+  int frontDist = loxCENTER.readRangeContinuousMillimeters();
+  int leftDist  = loxLEFT.readRangeContinuousMillimeters();
+  int rightDist = loxRIGHT.readRangeContinuousMillimeters();
 
 
 
