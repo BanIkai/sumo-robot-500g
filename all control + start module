@@ -5,9 +5,9 @@ Adafruit_VL53L0X LOXCENTER = Adafruit_VL53L0X();
 Adafruit_VL53L0X LOXLEFT   = Adafruit_VL53L0X();
 Adafruit_VL53L0X LOXRIGHT  = Adafruit_VL53L0X();
 
-const int XSHUT_LEFT    12
-const int XSHUT_CENTER  4
-const int XSHUT_RIGHT   2
+const int XSHUT_LEFT   = 12;
+const int XSHUT_CENTER =  4;
+const int XSHUT_RIGHT  = 2;
 
 const int START_PIN 3
 
