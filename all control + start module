@@ -1,17 +1,16 @@
 #include <Wire.h>
-#include "Adafruit_VL53L0X.h"
+#include <VL53L0X.h>
 
-Adafruit_VL53L0X LOXCENTER = Adafruit_VL53L0X();
-Adafruit_VL53L0X LOXLEFT   = Adafruit_VL53L0X();
-Adafruit_VL53L0X LOXRIGHT  = Adafruit_VL53L0X();
+VL53L0X LOXCENTER;
+VL53L0X LOXLEFT;
+VL53L0X LOXRIGHT;
+
+const int StartPin = 3;
+bool start = false;
 
 const int XSHUT_LEFT   = 12;
-const int XSHUT_CENTER =  4;
+const int XSHUT_CENTER = 4;
 const int XSHUT_RIGHT  = 2;
-
-const int START_PIN 3
-
-bool started = false;
 
 const int IN1_A = 11;
 const int IN2_A = 10;
@@ -23,13 +22,10 @@ const int IR_L = 7;
 const int IR_R = 8;
 
 unsigned long lastSearchChange = 0;
-
 bool searchDirection = 0;
 
 unsigned long escapeTimer = 0;
-
 int escapeState = 0;
-
 bool escapeLeft = false;
 
 void setMotorA(int speed) {
@@ -81,15 +77,14 @@ void setMotorB(int speed) {
 void move(int left, int right) {
 
   setMotorA(left);
-
   setMotorB(right);
 }
 
 void setup() {
 
-  Serial.begin(9600);
-
   Wire.begin();
+
+  pinMode(StartPin, INPUT);
 
   pinMode(IN1_A, OUTPUT);
   pinMode(IN2_A, OUTPUT);
@@ -99,8 +94,6 @@ void setup() {
 
   pinMode(IR_L, INPUT);
   pinMode(IR_R, INPUT);
-
-  pinMode(START_PIN, INPUT);
 
   pinMode(XSHUT_CENTER, OUTPUT);
   pinMode(XSHUT_LEFT, OUTPUT);
@@ -116,28 +109,40 @@ void setup() {
 
   delay(10);
 
-  if (!LOXCENTER.begin(0x30)) {
+  LOXCENTER.setTimeout(20);
+
+  if (!LOXCENTER.init()) {
 
     while (1);
   }
+
+  LOXCENTER.setAddress(0x30);
 
   digitalWrite(XSHUT_LEFT, HIGH);
 
   delay(10);
 
-  if (!LOXLEFT.begin(0x31)) {
+  LOXLEFT.setTimeout(20);
+
+  if (!LOXLEFT.init()) {
 
     while (1);
   }
+
+  LOXLEFT.setAddress(0x31);
 
   digitalWrite(XSHUT_RIGHT, HIGH);
 
   delay(10);
 
-  if (!LOXRIGHT.begin(0x32)) {
+  LOXRIGHT.setTimeout(20);
+
+  if (!LOXRIGHT.init()) {
 
     while (1);
   }
+
+  LOXRIGHT.setAddress(0x32);
 
   LOXCENTER.startContinuous();
   LOXLEFT.startContinuous();
@@ -146,20 +151,18 @@ void setup() {
 
 void loop() {
 
-  if (digitalRead(START_PIN) == HIGH) {
+  if (digitalRead(StartPin) == HIGH) {
 
-    started = true;
+    start = true;
   }
 
-  if (started == false) {
+  if (start == false) {
 
     move(0, 0);
-
     return;
   }
 
   int leftIR = digitalRead(IR_L);
-
   int rightIR = digitalRead(IR_R);
 
   int frontDist = LOXCENTER.readRangeContinuousMillimeters();
@@ -167,6 +170,12 @@ void loop() {
   int leftDist  = LOXLEFT.readRangeContinuousMillimeters();
 
   int rightDist = LOXRIGHT.readRangeContinuousMillimeters();
+
+  if (LOXCENTER.timeoutOccurred()) frontDist = 999;
+
+  if (LOXLEFT.timeoutOccurred()) leftDist = 999;
+
+  if (LOXRIGHT.timeoutOccurred()) rightDist = 999;
 
   if (escapeState == 1) {
 
