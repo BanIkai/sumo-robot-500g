@@ -1,8 +1,6 @@
 #include <Wire.h>
 #include "Adafruit_VL53L0X.h"
 
-
-
 Adafruit_VL53L0X LOXCENTER = Adafruit_VL53L0X();
 Adafruit_VL53L0X LOXLEFT   = Adafruit_VL53L0X();
 Adafruit_VL53L0X LOXRIGHT  = Adafruit_VL53L0X();
@@ -11,48 +9,45 @@ Adafruit_VL53L0X LOXRIGHT  = Adafruit_VL53L0X();
 #define XSHUT_CENTER  4
 #define XSHUT_RIGHT   2
 
-unsigned long lastSearchChange = 0;
-
-bool searchDirection = 0;
-
 #define START_PIN 3
 
 bool started = false;
 
-// MOTOR A
 int IN1_A = 11;
 int IN2_A = 10;
 
-// MOTOR B
 int IN1_B = 5;
 int IN2_B = 6;
-
-
 
 int IR_L = 7;
 int IR_R = 8;
 
+unsigned long lastSearchChange = 0;
 
+bool searchDirection = 0;
+
+unsigned long escapeTimer = 0;
+
+int escapeState = 0;
+
+bool escapeLeft = false;
 
 void setMotorA(int speed) {
 
   speed = constrain(speed, -255, 255);
 
-  // เดินหน้า
   if (speed > 0) {
 
     analogWrite(IN1_A, speed);
     digitalWrite(IN2_A, LOW);
   }
 
-  // ถอยหลัง
   else if (speed < 0) {
 
     digitalWrite(IN1_A, LOW);
     analogWrite(IN2_A, -speed);
   }
 
-  // หยุด
   else {
 
     digitalWrite(IN1_A, LOW);
@@ -64,21 +59,18 @@ void setMotorB(int speed) {
 
   speed = constrain(speed, -255, 255);
 
-  // เดินหน้า
   if (speed > 0) {
 
     analogWrite(IN1_B, speed);
     digitalWrite(IN2_B, LOW);
   }
 
-  // ถอยหลัง
   else if (speed < 0) {
 
     digitalWrite(IN1_B, LOW);
     analogWrite(IN2_B, -speed);
   }
 
-  // หยุด
   else {
 
     digitalWrite(IN1_B, LOW);
@@ -86,19 +78,18 @@ void setMotorB(int speed) {
   }
 }
 
-// สั่งมอเตอร์ซ้ายขวา
 void move(int left, int right) {
 
   setMotorA(left);
+
   setMotorB(right);
 }
-
 
 void setup() {
 
   Serial.begin(9600);
-  Wire.begin();
 
+  Wire.begin();
 
   pinMode(IN1_A, OUTPUT);
   pinMode(IN2_A, OUTPUT);
@@ -106,78 +97,70 @@ void setup() {
   pinMode(IN1_B, OUTPUT);
   pinMode(IN2_B, OUTPUT);
 
-
   pinMode(IR_L, INPUT);
   pinMode(IR_R, INPUT);
 
-
   pinMode(START_PIN, INPUT);
-
 
   pinMode(XSHUT_CENTER, OUTPUT);
   pinMode(XSHUT_LEFT, OUTPUT);
   pinMode(XSHUT_RIGHT, OUTPUT);
 
-  // ปิด sensor ทุกตัวก่อน
   digitalWrite(XSHUT_CENTER, LOW);
   digitalWrite(XSHUT_LEFT, LOW);
   digitalWrite(XSHUT_RIGHT, LOW);
 
   delay(10);
 
-
   digitalWrite(XSHUT_CENTER, HIGH);
+
   delay(10);
 
   if (!LOXCENTER.begin(0x30)) {
 
-    Serial.println("CENTER FAIL");
     while (1);
   }
 
-
   digitalWrite(XSHUT_LEFT, HIGH);
+
   delay(10);
 
   if (!LOXLEFT.begin(0x31)) {
 
-    Serial.println("LEFT FAIL");
     while (1);
   }
 
-
   digitalWrite(XSHUT_RIGHT, HIGH);
+
   delay(10);
 
   if (!LOXRIGHT.begin(0x32)) {
 
-    Serial.println("RIGHT FAIL");
     while (1);
   }
 
-  // เริ่มอ่านต่อเนื่อง
   LOXCENTER.startContinuous();
   LOXLEFT.startContinuous();
   LOXRIGHT.startContinuous();
-
-  Serial.println("READY");
 }
-
 
 void loop() {
 
-
   if (digitalRead(START_PIN) == HIGH) {
-     started = true;
-  }
-if(started==false)
-{
-move(0,0);
-return;
-}
- int leftIR = digitalRead(IR_L);
-  int rightIR = digitalRead(IR_R);
 
+    started = true;
+  }
+
+  if (started == false) {
+
+    move(0, 0);
+
+    return;
+  }
+
+  int leftIR = digitalRead(IR_L);
+
+  int rightIR = digitalRead(IR_R);
 
   int frontDist = LOXCENTER.readRangeContinuousMillimeters();
 
@@ -185,64 +168,101 @@ return;
 
   int rightDist = LOXRIGHT.readRangeContinuousMillimeters();
 
-if(started==true)
-{
-if (leftIR == LOW || rightIR == LOW) {
+  if (escapeState == 1) {
 
     move(-255, -255);
-    delay(170);
 
-    move(-220, 220);
-    delay(220);
+    if (millis() - escapeTimer >= 170) {
+
+      escapeTimer = millis();
+
+      if (escapeLeft) {
+
+        move(180, -255);
+      }
+
+      else {
+
+        move(-255, 180);
+      }
+
+      escapeState = 2;
+    }
+
+    return;
   }
 
+  else if (escapeState == 2) {
 
-  else if (frontDist > 0 && frontDist < 450) {
+    if (escapeLeft) {
+
+      move(180, -255);
+    }
+
+    else {
+
+      move(-255, 180);
+    }
+
+    if (millis() - escapeTimer >= 220) {
+
+      escapeState = 0;
+    }
+
+    return;
+  }
+
+  if (leftIR == LOW || rightIR == LOW) {
+
+    if (leftIR == LOW) {
+
+      escapeLeft = true;
+    }
+
+    else {
+
+      escapeLeft = false;
+    }
+
+    escapeState = 1;
+
+    escapeTimer = millis();
+
+    return;
+  }
+
+  if (frontDist > 0 && frontDist < 350) {
 
     move(255, 255);
   }
 
+  else if (leftDist > 0 && leftDist < 350) {
 
-  else if (leftDist > 0 && leftDist < 450) {
-
-    move(180, 255);
+    move(120, 255);
   }
 
+  else if (rightDist > 0 && rightDist < 350) {
 
-  else if (rightDist > 0 && rightDist < 450) {
-
-    move(255, 180);
+    move(255, 120);
   }
 
   else {
 
-   // เปลี่ยนทิศทุก 700 ms
-    if (millis() - lastSearchChange > 700) {
+    if (millis() - lastSearchChange >= 500) {
 
-        searchDirection = !searchDirection;
+      searchDirection = !searchDirection;
 
-        lastSearchChange = millis();
+      lastSearchChange = millis();
     }
 
-    // หมุนซ้าย
     if (searchDirection == 0) {
 
-        move(-140, 140);
+      move(-180, 180);
     }
 
-    // หมุนขวา
     else {
 
-        move(140, -140);
+      move(180, -180);
     }
-
-
+  }
 }
-  delay(10);
-}
-
-
- 
-
-
- 
