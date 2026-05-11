@@ -5,22 +5,19 @@ Adafruit_VL53L0X LOXCENTER = Adafruit_VL53L0X();
 Adafruit_VL53L0X LOXLEFT   = Adafruit_VL53L0X();
 Adafruit_VL53L0X LOXRIGHT  = Adafruit_VL53L0X();
 
-#define XSHUT_LEFT    12
-#define XSHUT_CENTER  4
-#define XSHUT_RIGHT   2
+const int XSHUT_LEFT   = 12;
+const int XSHUT_CENTER = 4;
+const int XSHUT_RIGHT  = 2;
 
-bool started = false;
 
-unsigned long startTimer = 0;
+const int IN1_A = 11;
+const int IN2_A = 10;
 
-int IN1_A = 11;
-int IN2_A = 10;
+const int IN1_B = 5;
+const int IN2_B = 6;
 
-int IN1_B = 5;
-int IN2_B = 6;
-
-int IR_L = 7;
-int IR_R = 8;
+const int IR_L = 7;
+const int IR_R = 8;
 
 unsigned long lastSearchChange = 0;
 
@@ -140,26 +137,10 @@ void setup() {
   LOXCENTER.startContinuous();
   LOXLEFT.startContinuous();
   LOXRIGHT.startContinuous();
-
-  startTimer = millis();
 }
 
 void loop() {
 
-  if (!started) {
-
-    if (millis() - startTimer < 5000) {
-
-      move(0, 0);
-
-      return;
-    }
-
-    else {
-
-      started = true;
-    }
-  }
 
   int leftIR = digitalRead(IR_L);
 
