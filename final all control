@@ -9,6 +9,10 @@ Adafruit_VL53L0X LOXRIGHT  = Adafruit_VL53L0X();
 #define XSHUT_CENTER  4
 #define XSHUT_RIGHT   2
 
+unsigned long lastSearchChange = 0;
+
+bool searchDirection = 0;
+
 // MOTOR A
 int IN1_A = 11;
 int IN2_A = 10;
@@ -17,7 +21,6 @@ int IN2_A = 10;
 int IN1_B = 5;
 int IN2_B = 6;
 
-// IR
 int IR_L = 7;
 int IR_R = 8;
 
@@ -25,18 +28,21 @@ void setMotorA(int speed) {
 
   speed = constrain(speed, -255, 255);
 
+  // เดินหน้า
   if (speed > 0) {
 
     analogWrite(IN1_A, speed);
     digitalWrite(IN2_A, LOW);
   }
 
+  // ถอยหลัง
   else if (speed < 0) {
 
     digitalWrite(IN1_A, LOW);
     analogWrite(IN2_A, -speed);
   }
 
+  // หยุด
   else {
 
     digitalWrite(IN1_A, LOW);
@@ -48,18 +54,21 @@ void setMotorB(int speed) {
 
   speed = constrain(speed, -255, 255);
 
+  // เดินหน้า
   if (speed > 0) {
 
     analogWrite(IN1_B, speed);
     digitalWrite(IN2_B, LOW);
   }
 
+  // ถอยหลัง
   else if (speed < 0) {
 
     digitalWrite(IN1_B, LOW);
     analogWrite(IN2_B, -speed);
   }
 
+  // หยุด
   else {
 
     digitalWrite(IN1_B, LOW);
@@ -67,6 +76,7 @@ void setMotorB(int speed) {
   }
 }
 
+// สั่งมอเตอร์ซ้ายขวา
 void move(int left, int right) {
 
   setMotorA(left);
@@ -78,23 +88,20 @@ void setup() {
   Serial.begin(9600);
   Wire.begin();
 
-  // MOTOR
   pinMode(IN1_A, OUTPUT);
   pinMode(IN2_A, OUTPUT);
 
   pinMode(IN1_B, OUTPUT);
   pinMode(IN2_B, OUTPUT);
 
-  // IR
   pinMode(IR_L, INPUT);
   pinMode(IR_R, INPUT);
 
-  // XSHUT
   pinMode(XSHUT_CENTER, OUTPUT);
   pinMode(XSHUT_LEFT, OUTPUT);
   pinMode(XSHUT_RIGHT, OUTPUT);
 
-  // ปิดทุกตัวก่อน
+  // ปิด sensor ทุกตัวก่อน
   digitalWrite(XSHUT_CENTER, LOW);
   digitalWrite(XSHUT_LEFT, LOW);
   digitalWrite(XSHUT_RIGHT, LOW);
@@ -131,6 +138,7 @@ void setup() {
     while (1);
   }
 
+  // เริ่มอ่านต่อเนื่อง
   LOXCENTER.startContinuous();
   LOXLEFT.startContinuous();
   LOXRIGHT.startContinuous();
@@ -147,16 +155,7 @@ void loop() {
   int leftDist  = LOXLEFT.readRangeContinuousMillimeters();
   int rightDist = LOXRIGHT.readRangeContinuousMillimeters();
 
-  Serial.print("F:");
-  Serial.print(frontDist);
-
-  Serial.print(" L:");
-  Serial.print(leftDist);
-
-  Serial.print(" R:");
-  Serial.println(rightDist);
-
-  // กันตกสนาม
+  // เจอเส้นขาว
   if (leftIR == LOW || rightIR == LOW) {
 
     move(-255, -255);
@@ -166,28 +165,46 @@ void loop() {
     delay(220);
   }
 
-  // กลางเจอ
+  // เจอด้านหน้า
   else if (frontDist > 0 && frontDist < 450) {
 
     move(255, 255);
   }
 
-  // ซ้ายเจอ
+  // เจอด้านซ้าย
   else if (leftDist > 0 && leftDist < 450) {
 
     move(180, 255);
   }
 
-  // ขวาเจอ
+  // เจอด้านขวา
   else if (rightDist > 0 && rightDist < 450) {
 
     move(255, 180);
   }
 
-  // ไม่เจอ
+  // หาเป้า
   else {
 
-    move(120, -120);
+    // เปลี่ยนทิศทุก 700 ms
+    if (millis() - lastSearchChange > 700) {
+
+      searchDirection = !searchDirection;
+
+      lastSearchChange = millis();
+    }
+
+    // หมุนซ้าย
+    if (searchDirection == 0) {
+
+      move(-140, 140);
+    }
+
+    // หมุนขวา
+    else {
+
+      move(140, -140);
+    }
   }
 
   delay(10);
